@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+# Dados pessoais dos contatos NUNCA vao para o repositorio publico
+dados-privados/
+*.xlsx
+*.xls
+*.csv
