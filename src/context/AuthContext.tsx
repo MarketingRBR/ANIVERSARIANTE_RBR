@@ -28,16 +28,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [regionCodes, setRegionCodes] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
 
-  const loadProfile = useCallback(async (s: Session | null) => {
-    if (!s) { setProfile(null); setRegionCodes([]); return }
-    const [p, r] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle(),
-      supabase.from('user_regions').select('region_code').eq('user_id', s.user.id),
-    ])
-    setProfile((p.data as Profile | null) ?? null)
-    setRegionCodes((r.data ?? []).map((x) => x.region_code))
-  }, [])
+const loadProfile = useCallback(async (s: Session | null) => {
+  if (!s) {
+    setProfile(null)
+    setRegionCodes([])
+    return
+  }
 
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, email, full_name, role, active')
+    .eq('id', s.user.id)
+    .single()
+
+  if (error) {
+    console.error('Erro ao carregar perfil:', error)
+    setProfile(null)
+    return
+  }
+
+  console.log('Perfil carregado:', data)
+
+  setProfile(data as Profile)
+
+  const { data: regions, error: regionError } = await supabase
+    .from('user_regions')
+    .select('region_code')
+    .eq('user_id', s.user.id)
+
+  if (regionError) {
+    console.error('Erro ao carregar regiões:', regionError)
+    setRegionCodes([])
+    return
+  }
+
+  setRegionCodes((regions ?? []).map((x) => x.region_code))
+}, [])
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session)
